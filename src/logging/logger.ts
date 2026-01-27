@@ -1,33 +1,8 @@
 import type { Database } from "better-sqlite3";
+import { ANSI, LEVEL_COLORS, LEVEL_LABELS } from "./logger.constants";
 import type { LogEntry, LogLevel } from "./logger.types";
 
 export type { LogLevel } from "./logger.types";
-
-const COLORS = {
-  reset: "\x1b[0m",
-  dim: "\x1b[2m",
-  red: "\x1b[31m",
-  yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  cyan: "\x1b[36m",
-  green: "\x1b[32m",
-} as const;
-
-const LEVEL_COLORS: Record<LogLevel, string> = {
-  debug: COLORS.dim,
-  info: COLORS.blue,
-  warn: COLORS.yellow,
-  error: COLORS.red,
-  tool: COLORS.cyan,
-};
-
-const LEVEL_LABELS: Record<LogLevel, string> = {
-  debug: "DEBUG",
-  info: "INFO ",
-  warn: "WARN ",
-  error: "ERROR",
-  tool: "TOOL ",
-};
 
 class Logger {
   private db: Database | null = null;
@@ -57,7 +32,7 @@ class Logger {
     if (!meta || Object.keys(meta).length === 0) return "";
 
     try {
-      return ` ${COLORS.dim}${JSON.stringify(meta)}${COLORS.reset}`;
+      return ` ${ANSI.dim}${JSON.stringify(meta)}${ANSI.reset}`;
     } catch {
       return "";
     }
@@ -72,7 +47,7 @@ class Logger {
     const metaStr = this.formatMeta(entry.meta);
 
     console.log(
-      `${COLORS.dim}${time}${COLORS.reset} ${color}${label}${COLORS.reset} ${entry.message}${metaStr}`
+      `${ANSI.dim}${time}${ANSI.reset} ${color}${label}${ANSI.reset} ${entry.message}${metaStr}`
     );
 
     if (this.db) {
