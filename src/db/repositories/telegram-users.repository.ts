@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { NewTelegramUser, TelegramUser } from "@/db/types";
+import type { NewTelegramUser, TelegramUser } from "@/db/db.types";
 
 export const telegramUsersRepo = {
   insert(user: NewTelegramUser): number {

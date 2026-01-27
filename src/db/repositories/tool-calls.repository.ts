@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { NewToolCall, ToolCall } from "@/db/types";
+import type { NewToolCall, ToolCall } from "@/db/db.types";
 
 export const toolCallsRepo = {
   insert(call: NewToolCall): number {

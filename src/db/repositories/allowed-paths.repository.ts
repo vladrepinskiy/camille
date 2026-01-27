@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { AllowedPath, PathPermissions } from "@/db/types";
+import type { AllowedPath, PathPermissions } from "@/db/db.types";
 
 export const allowedPathsRepo = {
   insert(path: string, permissions: PathPermissions = "read"): number {

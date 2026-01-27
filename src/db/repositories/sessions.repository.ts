@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { NewSession, Session } from "@/db/types";
+import type { NewSession, Session } from "@/db/db.types";
 
 export const sessionsRepo = {
   insert(session: NewSession): void {

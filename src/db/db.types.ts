@@ -1,3 +1,5 @@
+import type { LogLevel } from "@/logging/logger.types";
+
 export type MessageRole = "user" | "assistant" | "system" | "tool";
 
 export interface Message {
@@ -35,8 +37,6 @@ export interface NewToolCall {
   duration_ms: number | null;
   created_at: number;
 }
-
-export type LogLevel = "debug" | "info" | "warn" | "error" | "tool";
 
 export interface Log {
   id: number;

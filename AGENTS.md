@@ -18,7 +18,7 @@ A daemon-style AI personal assistant. Single long-running process owns all state
 
 - **SQLite** with `better-sqlite3` (synchronous driver, simple)
 - **Repository pattern**: one file per entity in `src/db/repositories/`
-- Types in `src/db/types.ts`, schema in `src/db/schema.sql`
+- Types in `src/db/db.types.ts`, schema in `src/db/schema.sql`
 - No ORM — just typed wrapper functions around raw SQL
 
 ### Security
@@ -36,12 +36,13 @@ A daemon-style AI personal assistant. Single long-running process owns all state
 
 ### Code Style
 
-- **Path aliases**: use `@/` imports (e.g., `import { paths } from "@/utils/paths"`)
+- **Path aliases**: use `@/` imports (e.g., `import { paths } from "@/utils/paths.util"`)
 - **No `.js` extensions** in imports — tsx and tsup handle resolution
 - **Module resolution**: `Bundler` mode in tsconfig
 - **Build**: `tsup` for production (bundles, resolves aliases), `tsx` for dev
 - **Newline before return**: add blank line before `return` unless it's the only statement in the block
 - **Newline after early return**: add blank line after early `return` / guard clauses
+- **File naming**: type files use `*.types.ts`, utility files use `*.util.ts`
 
 ### Tools
 

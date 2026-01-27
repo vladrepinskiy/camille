@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { Message, NewMessage } from "@/db/types";
+import type { Message, NewMessage } from "@/db/db.types";
 
 export const messagesRepo = {
   insert(msg: NewMessage): number {

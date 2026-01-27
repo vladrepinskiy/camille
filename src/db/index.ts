@@ -9,7 +9,6 @@ export { toolCallsRepo } from "./repositories/tool-calls.repository";
 export type {
   AllowedPath,
   ClientType,
-  LogLevel,
   Message,
   MessageRole,
   NewAllowedPath,
@@ -21,4 +20,4 @@ export type {
   Session,
   TelegramUser,
   ToolCall,
-} from "./types";
+} from "./db.types";
