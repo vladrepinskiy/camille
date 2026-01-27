@@ -1,4 +1,4 @@
-import type { LogLevel } from "@/logging/logger.types";
+import type { LogLevel } from "@/logging";
 
 export type MessageRole = "user" | "assistant" | "system" | "tool";
 
