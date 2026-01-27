@@ -20,7 +20,6 @@ export function hashCode(code: string): string {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
-
 export function generateSessionId(): string {
   return randomBytes(16).toString("hex");
 }

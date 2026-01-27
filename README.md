@@ -99,28 +99,27 @@ Dev: `tsx` (TypeScript runner), `tsup` (bundler), `typescript`, `prettier`
 
 ```
 src/
-├── index.ts           # Daemon entry
-├── cli.ts             # CLI commands
+├── index.ts              # Daemon entry
+├── cli/
+│   ├── cli.ts            # CLI commands
+│   ├── ipc.client.ts     # IPC client (talks to daemon)
+│   └── ipc.types.ts      # IPC protocol types
 ├── core/
-│   ├── agent.ts       # Message processing
-│   ├── runtime.ts     # Daemon lifecycle
-│   ├── config.ts      # Config loading
-│   └── permissions.ts # Filesystem sandbox
+│   ├── agent.ts          # Message processing
+│   ├── runtime.ts        # Daemon lifecycle
+│   ├── config.ts         # Config loading
+│   └── permissions.ts    # Filesystem sandbox
 ├── db/
-│   ├── connection.ts  # SQLite connection
-│   ├── types.ts       # Row type definitions
-│   ├── schema.sql     # DDL
-│   └── repositories/  # One file per entity
-│       ├── messages.repository.ts
-│       ├── sessions.repository.ts
-│       ├── tool-calls.repository.ts
-│       ├── telegram-users.repository.ts
-│       ├── pairing-codes.repository.ts
-│       └── allowed-paths.repository.ts
+│   ├── connection.ts     # SQLite connection
+│   ├── db.types.ts       # Row type definitions
+│   ├── schema.sql        # DDL
+│   └── repositories/     # One file per entity
 ├── clients/
-│   ├── ipc/           # Unix socket server/client
-│   └── telegram/      # Bot implementation
-├── tools/             # Agent tools (search, read)
-├── logging/           # Logger (stdout + SQLite)
-└── utils/             # Paths, crypto helpers
+│   ├── abstract.adapter.ts # Adapter interface
+│   ├── ipc/              # IPC adapter (daemon-side)
+│   ├── telegram/         # Telegram adapter
+│   └── imessage/         # iMessage adapter (stub)
+├── tools/                # Agent tools
+├── logging/              # Logger (stdout + SQLite)
+└── utils/                # Paths, crypto helpers
 ```

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { IPCClient } from "@/clients/ipc/client";
 import { allowedPathsRepo, pairingCodesRepo } from "@/db";
 import { generatePairingCode, hashCode } from "@/utils/crypto.util";
 import { paths } from "@/utils/paths.util";
@@ -8,14 +7,17 @@ import { spawn } from "child_process";
 import { Command } from "commander";
 import { existsSync, readFileSync, rmSync, unlinkSync } from "fs";
 import { connect } from "net";
-import { join, resolve } from "path";
+import { dirname, join, resolve } from "path";
 import { createInterface } from "readline";
+import { fileURLToPath } from "url";
+import { IPCClient } from "./ipc.client";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const program = new Command();
 
-const pkg = JSON.parse(
-  readFileSync(join(__dirname, "../package.json"), "utf-8")
-);
+const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
 
 program
   .name(pkg.name || "camille")

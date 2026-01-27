@@ -13,6 +13,8 @@ A daemon-style AI personal assistant. Single long-running process owns all state
 - **Daemon + clients model**, not "CLI app" or "web server"
 - IPC via Unix domain socket (`~/.camille/camille.sock`), newline-delimited JSON
 - All data in `~/.camille/` (db, socket, pid, config, logs)
+- **Client adapters**: pluggable interface for communication channels (IPC, Telegram, iMessage)
+- CLI is separate from daemon — uses IPC client to talk to daemon
 
 ### Database
 

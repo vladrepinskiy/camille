@@ -4,9 +4,12 @@ import { generateSessionId } from "@/utils/crypto.util";
 import { paths } from "@/utils/paths.util";
 import { existsSync, unlinkSync } from "fs";
 import { createServer, type Server, type Socket } from "net";
+import type { AbstractAdapter } from "../abstract.adapter";
 import type { RequestMessage, ResponseMessage } from "./ipc.types";
 
-export class IPCServer {
+export class IPCAdapter implements AbstractAdapter {
+  readonly name = "ipc";
+
   private server: Server | null = null;
   private agent: Agent;
   private connections: Set<Socket> = new Set();
@@ -26,12 +29,12 @@ export class IPCServer {
       this.server = createServer((socket) => this.handleConnection(socket));
 
       this.server.on("error", (err) => {
-        logger.error("IPC server error", { error: err.message });
+        logger.error("IPC adapter error", { error: err.message });
         reject(err);
       });
 
       this.server.listen(socketPath, () => {
-        logger.debug("IPC server listening", { socket: socketPath });
+        logger.info("IPC adapter started", { socket: socketPath });
         resolve();
       });
     });
@@ -54,6 +57,7 @@ export class IPCServer {
               // Ignore
             }
           }
+          logger.info("IPC adapter stopped");
           resolve();
         });
       });

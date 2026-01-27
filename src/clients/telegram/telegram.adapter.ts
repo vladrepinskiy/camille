@@ -3,13 +3,16 @@ import { pairingCodesRepo, telegramUsersRepo } from "@/db";
 import { logger } from "@/logging";
 import { generateSessionId, hashCode } from "@/utils/crypto.util";
 import { Bot, type Context } from "grammy";
+import type { AbstractAdapter } from "../abstract.adapter";
 
-export class TelegramBot {
+export class TelegramAdapter implements AbstractAdapter {
+  readonly name = "telegram";
+
   private bot: Bot;
   private agent: Agent;
   private sessions: Map<number, string> = new Map();
 
-  constructor(token: string, agent: Agent) {
+  constructor(agent: Agent, token: string) {
     this.bot = new Bot(token);
     this.agent = agent;
     this.setupHandlers();
@@ -18,13 +21,14 @@ export class TelegramBot {
   async start(): Promise<void> {
     this.bot.start({
       onStart: (botInfo) => {
-        logger.info("Telegram bot started", { username: botInfo.username });
+        logger.info("Telegram adapter started", { username: botInfo.username });
       },
     });
   }
 
   async stop(): Promise<void> {
     await this.bot.stop();
+    logger.info("Telegram adapter stopped");
   }
 
   private setupHandlers(): void {
@@ -42,11 +46,13 @@ export class TelegramBot {
       const telegramId = ctx.from?.id;
       if (!telegramId) {
         await ctx.reply("Could not identify your Telegram account.");
+
         return;
       }
 
       if (telegramUsersRepo.isAuthorized(telegramId)) {
         await ctx.reply("You are already paired! You can start chatting.");
+
         return;
       }
 
@@ -57,6 +63,7 @@ export class TelegramBot {
           "Usage: `/pair YOUR_CODE`\n" +
           "Get a code by running `camille pair` in your terminal."
         );
+
         return;
       }
 
@@ -68,6 +75,7 @@ export class TelegramBot {
           "Invalid or expired pairing code.\n\n" +
           "Please generate a new code with `camille pair` and try again."
         );
+
         return;
       }
 
@@ -95,6 +103,7 @@ export class TelegramBot {
     this.bot.command("status", async (ctx) => {
       if (!this.isAuthorized(ctx)) {
         await ctx.reply("You are not authorized. Please use /pair first.");
+
         return;
       }
 
@@ -109,6 +118,7 @@ export class TelegramBot {
           "1. Run `camille pair` in your terminal\n" +
           "2. Send `/pair YOUR_CODE` here"
         );
+
         return;
       }
 
@@ -151,6 +161,7 @@ export class TelegramBot {
   private isAuthorized(ctx: Context): boolean {
     const telegramId = ctx.from?.id;
     if (!telegramId) return false;
+
     return telegramUsersRepo.isAuthorized(telegramId);
   }
 }
