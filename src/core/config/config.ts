@@ -5,6 +5,8 @@ import { parse as parseToml } from "smol-toml";
 import { ConfigSchema, DEFAULT_CONFIG } from "./config.schema";
 import type { Config } from "./config.types";
 
+// TODO [VR]: Add a CLI command to configure the app on onboarding
+
 export function loadConfig(): Config {
   const configPath = paths.config();
 
