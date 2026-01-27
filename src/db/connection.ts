@@ -1,4 +1,4 @@
-import { paths } from "@/utils/paths";
+import { paths } from "@/utils/paths.util";
 import Database from "better-sqlite3";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
