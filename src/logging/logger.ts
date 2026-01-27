@@ -2,8 +2,6 @@ import type { Database } from "better-sqlite3";
 import { ANSI, LEVEL_COLORS, LEVEL_LABELS } from "./logger.constants";
 import type { LogEntry, LogLevel } from "./logger.types";
 
-export type { LogLevel } from "./logger.types";
-
 class Logger {
   private db: Database | null = null;
   private minLevel: LogLevel = "debug";
