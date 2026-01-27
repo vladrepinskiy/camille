@@ -83,43 +83,18 @@ Camille runs in a strict sandbox:
 - **Read/Search**: Only `~/.camille/` + whitelisted paths
 - **Whitelist**: CLI-only (`camille allow`), cannot be modified via chat
 
-## Dependencies
-
-| Package          | Purpose                   |
-| ---------------- | ------------------------- |
-| `better-sqlite3` | Synchronous SQLite driver |
-| `commander`      | CLI argument parsing      |
-| `grammy`         | Telegram bot framework    |
-| `zod`            | Schema validation         |
-| `smol-toml`      | TOML config parsing       |
-
-Dev: `tsx` (TypeScript runner), `tsup` (bundler), `typescript`, `prettier`
 
 ## Project Structure
 
 ```
 src/
-├── index.ts              # Daemon entry
-├── cli/
-│   ├── cli.ts            # CLI commands
-│   ├── ipc.client.ts     # IPC client (talks to daemon)
-│   └── ipc.types.ts      # IPC protocol types
-├── core/
-│   ├── agent.ts          # Message processing
-│   ├── runtime.ts        # Daemon lifecycle
-│   ├── config.ts         # Config loading
-│   └── permissions.ts    # Filesystem sandbox
-├── db/
-│   ├── connection.ts     # SQLite connection
-│   ├── db.types.ts       # Row type definitions
-│   ├── schema.sql        # DDL
-│   └── repositories/     # One file per entity
-├── clients/
-│   ├── abstract.adapter.ts # Adapter interface
-│   ├── ipc/              # IPC adapter (daemon-side)
-│   ├── telegram/         # Telegram adapter
-│   └── imessage/         # iMessage adapter (stub)
-├── tools/                # Agent tools
-├── logging/              # Logger (stdout + SQLite)
-└── utils/                # Paths, crypto helpers
+├── index.ts      # Daemon entry
+├── cli/          # CLI commands, IPC client
+├── core/         # Agent, runtime, config, permissions
+├── clients/      # Communication adapters (IPC, Telegram, iMessage)
+├── db/           # SQLite connection, schema, repositories
+├── llm/          # LLM provider interfaces
+├── tools/        # Agent tools (filesystem, etc.)
+├── logging/      # Logger (stdout + SQLite sinks)
+└── utils/        # Path and crypto helpers
 ```
