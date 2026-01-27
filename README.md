@@ -33,6 +33,17 @@ npm run build
 node dist/cli.js --help
 ```
 
+## Install Globally
+
+```bash
+npm run build    # Build first
+npm link         # Creates global symlink
+```
+
+Now `camille` works from anywhere. Rebuild after changes.
+
+To uninstall: `npm unlink -g camille`
+
 ## CLI Commands
 
 ```
@@ -74,16 +85,15 @@ Camille runs in a strict sandbox:
 
 ## Dependencies
 
-| Package          | Purpose                     |
-| ---------------- | --------------------------- |
-| `better-sqlite3` | Synchronous SQLite driver   |
-| `kysely`         | Type-safe SQL query builder |
-| `commander`      | CLI argument parsing        |
-| `grammy`         | Telegram bot framework      |
-| `zod`            | Schema validation           |
-| `smol-toml`      | TOML config parsing         |
+| Package          | Purpose                   |
+| ---------------- | ------------------------- |
+| `better-sqlite3` | Synchronous SQLite driver |
+| `commander`      | CLI argument parsing      |
+| `grammy`         | Telegram bot framework    |
+| `zod`            | Schema validation         |
+| `smol-toml`      | TOML config parsing       |
 
-Dev: `tsx` (TypeScript runner), `tsup` (bundler), `typescript`
+Dev: `tsx` (TypeScript runner), `tsup` (bundler), `typescript`, `prettier`
 
 ## Project Structure
 
@@ -97,9 +107,16 @@ src/
 │   ├── config.ts      # Config loading
 │   └── permissions.ts # Filesystem sandbox
 ├── db/
-│   ├── index.ts       # Kysely queries
-│   ├── database.ts    # Type definitions
-│   └── schema.sql     # DDL
+│   ├── connection.ts  # SQLite connection
+│   ├── types.ts       # Row type definitions
+│   ├── schema.sql     # DDL
+│   └── repositories/  # One file per entity
+│       ├── messages.repository.ts
+│       ├── sessions.repository.ts
+│       ├── tool-calls.repository.ts
+│       ├── telegram-users.repository.ts
+│       ├── pairing-codes.repository.ts
+│       └── allowed-paths.repository.ts
 ├── clients/
 │   ├── ipc/           # Unix socket server/client
 │   └── telegram/      # Bot implementation

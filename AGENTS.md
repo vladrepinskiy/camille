@@ -16,10 +16,10 @@ A daemon-style AI personal assistant. Single long-running process owns all state
 
 ### Database
 
-- **SQLite** with `better-sqlite3` (synchronous driver)
-- **Kysely** for type-safe queries (compile-time column/table checking)
-- Async Kysely for daemon, sync wrappers for CLI commands
-- Schema in `src/db/schema.sql`, types in `src/db/database.ts`
+- **SQLite** with `better-sqlite3` (synchronous driver, simple)
+- **Repository pattern**: one file per entity in `src/db/repositories/`
+- Types in `src/db/types.ts`, schema in `src/db/schema.sql`
+- No ORM — just typed wrapper functions around raw SQL
 
 ### Security
 
@@ -40,6 +40,8 @@ A daemon-style AI personal assistant. Single long-running process owns all state
 - **No `.js` extensions** in imports — tsx and tsup handle resolution
 - **Module resolution**: `Bundler` mode in tsconfig
 - **Build**: `tsup` for production (bundles, resolves aliases), `tsx` for dev
+- **Newline before return**: add blank line before `return` unless it's the only statement in the block
+- **Newline after early return**: add blank line after early `return` / guard clauses
 
 ### Tools
 
