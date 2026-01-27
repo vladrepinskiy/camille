@@ -2,7 +2,7 @@ import type { Config } from "@/core/config";
 import { messagesRepo, toolCallsRepo } from "@/db";
 import { logger } from "@/logging";
 import { toolRegistry } from "@/tools";
-import type { ToolContext } from "@/tools/tool";
+import type { ToolContext } from "@/tools";
 import { generateSessionId } from "@/utils/crypto.util";
 import type { AgentResponse } from "./agent.types";
 
