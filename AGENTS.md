@@ -1,0 +1,47 @@
+# Agents Guide
+
+> After any large change, check if this file or README.md needs updating.
+
+## What is Camille
+
+A daemon-style AI personal assistant. Single long-running process owns all state. CLI and Telegram are just I/O adapters connecting via IPC.
+
+## Key Decisions
+
+### Architecture
+
+- **Daemon + clients model**, not "CLI app" or "web server"
+- IPC via Unix domain socket (`~/.camille/camille.sock`), newline-delimited JSON
+- All data in `~/.camille/` (db, socket, pid, config, logs)
+
+### Database
+
+- **SQLite** with `better-sqlite3` (synchronous driver)
+- **Kysely** for type-safe queries (compile-time column/table checking)
+- Async Kysely for daemon, sync wrappers for CLI commands
+- Schema in `src/db/schema.sql`, types in `src/db/database.ts`
+
+### Security
+
+- **Filesystem sandbox**: write only to `~/.camille/`, read requires whitelist
+- **Whitelist is CLI-only**: `camille allow <path>` — cannot be modified via chat
+- `allowed_paths.added_by` is typed as `"cli"` literal — enforced at compile time
+- **Telegram pairing**: short-lived codes (5 min), SHA256 hashed, generated via CLI
+
+### Config
+
+- **Hardcoded defaults in source** — immune to agent corruption
+- Config file (`~/.camille/config.toml`) validated with Zod
+- Invalid/missing config falls back to defaults, logs warning, doesn't crash
+
+### Code Style
+
+- **Path aliases**: use `@/` imports (e.g., `import { paths } from "@/utils/paths"`)
+- **No `.js` extensions** in imports — tsx and tsup handle resolution
+- **Module resolution**: `Bundler` mode in tsconfig
+- **Build**: `tsup` for production (bundles, resolves aliases), `tsx` for dev
+
+### Tools
+
+- Tools must call `permissions.assertRead()` / `assertWrite()` before any FS operation
+- Tool interface uses Zod for input validation
