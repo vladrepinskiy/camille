@@ -1,6 +1,5 @@
+import { copyFileSync } from "fs";
 import { defineConfig } from "tsup";
-import { copyFileSync, mkdirSync } from "fs";
-import { dirname, join } from "path";
 
 export default defineConfig({
   entry: {
@@ -16,15 +15,13 @@ export default defineConfig({
   splitting: true,
   external: ["better-sqlite3"],
   onSuccess: async () => {
-    // Copy schema.sql to dist after build
+    // Copy schema.sql to dist after build (chunks end up in dist/ directly)
     const srcSchema = "src/db/schema.sql";
-    const destDir = "dist/db";
-    const destSchema = join(destDir, "schema.sql");
+    const destSchema = "dist/schema.sql";
 
     try {
-      mkdirSync(destDir, { recursive: true });
       copyFileSync(srcSchema, destSchema);
-      console.log("Copied schema.sql to dist/db/");
+      console.log("Copied schema.sql to dist/");
     } catch (err) {
       console.warn("Could not copy schema.sql:", err);
     }
