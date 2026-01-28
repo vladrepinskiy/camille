@@ -1,11 +1,10 @@
 import { logger } from "@/logging";
 import { paths } from "@/utils/paths.util";
-import { existsSync, readFileSync } from "fs";
-import { parse as parseToml } from "smol-toml";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { dirname } from "path";
+import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 import { ConfigSchema, DEFAULT_CONFIG } from "./config.schema";
 import type { Config } from "./config.types";
-
-// TODO [VR]: Add a CLI command to configure the app on onboarding
 
 export function loadConfig(): Config {
   const configPath = paths.config();
@@ -41,4 +40,16 @@ export function loadConfig(): Config {
 
     return DEFAULT_CONFIG;
   }
+}
+
+export function writeConfig(config: Config): void {
+  const configPath = paths.config();
+  const configDir = dirname(configPath);
+
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+
+  const toml = stringifyToml(config);
+  writeFileSync(configPath, toml, "utf-8");
 }

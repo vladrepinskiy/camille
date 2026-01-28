@@ -182,6 +182,14 @@ program
   });
 
 program
+  .command("configure")
+  .description("Interactive setup wizard")
+  .action(async () => {
+    const { runConfigure } = await import("./apps/configure/Configure.js");
+    runConfigure();
+  });
+
+program
   .command("pair")
   .description("Generate a pairing code for Telegram")
   .action(() => {
@@ -251,7 +259,7 @@ program
 program
   .command("reset")
   .description("Wipe agent memory and data (keeps config by default)")
-  .option("--all", "Also delete config file")
+  .option("-a, --all", "Also delete config file")
   .option("-y, --yes", "Skip confirmation prompt")
   .action(async (options) => {
     const dataDir = paths.data();
