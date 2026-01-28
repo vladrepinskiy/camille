@@ -1,7 +1,8 @@
-import { generateObject } from "ai";
-import { z } from "zod";
-
 import type { Config } from "@/core/config";
+import { logger } from "@/logging";
+import { generateObject } from "ai";
+// TODO [VR]: replace generateObject as it's outdated
+import { z } from "zod";
 
 import { AbstractAgent } from "./abstract.agent";
 import type { Plan, PlannerInput } from "./agent.types";
@@ -15,7 +16,11 @@ const PlanSchema = z.object({
     .array(
       z.object({
         tool: z.string().describe("Name of the tool to call"),
-        input: z.record(z.unknown()).describe("Input parameters for the tool"),
+        input: z
+          .string()
+          .describe(
+            "Input parameters for the tool as a JSON string (e.g., '{\"query\":\"test\"}')"
+          ),
       })
     )
     .describe("List of tool calls to make, in order"),
@@ -59,7 +64,25 @@ export class PlannerAgent extends AbstractAgent {
     return {
       reasoning: object.reasoning,
       requiresTools: object.requiresTools,
-      steps: object.steps,
+      steps: object.steps.map((step) => {
+        let parsedInput: Record<string, unknown>;
+
+        try {
+          parsedInput = JSON.parse(step.input) as Record<string, unknown>;
+        } catch (err) {
+          // If parsing fails, log and use empty object
+          logger.warn(`Failed to parse tool input JSON for ${step.tool}`, {
+            input: step.input,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          parsedInput = {};
+        }
+
+        return {
+          tool: step.tool,
+          input: parsedInput,
+        };
+      }),
     };
   }
 }
