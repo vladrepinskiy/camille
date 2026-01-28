@@ -1,6 +1,12 @@
+import { existsSync, mkdirSync, readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import { mkdirSync, existsSync } from "fs";
+
+export interface PackageJson {
+  name?: string;
+  version?: string;
+  description?: string;
+}
 
 // Data directory - ~/.camille/
 const DATA_DIR = join(homedir(), ".camille");
@@ -48,6 +54,20 @@ export const paths = {
     if (!existsSync(logsDir)) {
       mkdirSync(logsDir, { recursive: true });
     }
+
     return logsDir;
   },
 };
+
+export function findPackageJson(callerDir: string): PackageJson {
+  // Try both paths: ../package.json (from dist/) and ../../package.json (from src/*/)
+  const candidates = [join(callerDir, "../package.json"), join(callerDir, "../../package.json")];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return JSON.parse(readFileSync(candidate, "utf-8"));
+    }
+  }
+
+  return {};
+}

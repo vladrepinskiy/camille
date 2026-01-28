@@ -2,7 +2,7 @@
 
 import { allowedPathsRepo, pairingCodesRepo } from "@/db";
 import { generatePairingCode, hashCode } from "@/utils/crypto.util";
-import { paths } from "@/utils/paths.util";
+import { findPackageJson, paths } from "@/utils/paths.util";
 import { spawn } from "child_process";
 import { Command } from "commander";
 import { existsSync, readFileSync, rmSync, unlinkSync } from "fs";
@@ -17,7 +17,7 @@ const __dirname = dirname(__filename);
 
 const program = new Command();
 
-const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
+const pkg = findPackageJson(__dirname);
 
 program
   .name(pkg.name || "camille")
@@ -75,9 +75,20 @@ program
     try {
       process.kill(pid, "SIGTERM");
       console.log(`Sent shutdown signal to Camille (PID: ${pid})`);
-    } catch (err) {
-      console.error(`Failed to stop Camille: ${err}`);
-      process.exit(1);
+    } catch (err: unknown) {
+      const error = err as NodeJS.ErrnoException;
+      if (error.code === "ESRCH") {
+        // Process doesn't exist - clean up stale files
+        unlinkSync(pidPath);
+        const sockPath = paths.socket();
+        if (existsSync(sockPath)) {
+          unlinkSync(sockPath);
+        }
+        console.log("Cleaned up stale PID file (process was not running)");
+      } else {
+        console.error(`Failed to stop Camille: ${err}`);
+        process.exit(1);
+      }
     }
   });
 
