@@ -1,16 +1,17 @@
 import type { AbstractAdapter } from "@/adapters/abstract.adapter";
 import { IPCAdapter } from "@/adapters/ipc/ipc.adapter";
 import { TelegramAdapter } from "@/adapters/telegram/telegram.adapter";
-import { Agent } from "@/core/agent";
 import { loadConfig, type Config } from "@/core/config";
+import { Orchestrator } from "@/core/orchestrator";
 import { closeDb, getDb } from "@/db";
+import { isLLMConfigured } from "@/llm";
 import { logger } from "@/logging";
 import { paths } from "@/utils/paths.util";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 
 export class Runtime {
   private config: Config | null = null;
-  private agent: Agent | null = null;
+  private orchestrator: Orchestrator | null = null;
   private adapters: AbstractAdapter[] = [];
   private isShuttingDown = false;
 
@@ -29,13 +30,32 @@ export class Runtime {
       model: this.config.llm.model,
     });
 
-    this.agent = new Agent(this.config);
-    logger.info("Agent initialized");
+    // Verify LLM is configured
+    const llmConfigured = isLLMConfigured({
+      provider: this.config.llm.provider,
+      model: this.config.llm.model,
+      apiKey: this.config.llm.apiKey,
+    });
 
-    this.adapters.push(new IPCAdapter(this.agent));
+    if (!llmConfigured) {
+      logger.error("LLM not configured. Run 'camille configure' to set up.");
+      throw new Error(
+        "LLM not configured. Please run 'camille configure' to set up your API key."
+      );
+    }
+
+    this.orchestrator = new Orchestrator(this.config);
+    logger.info("Orchestrator initialized", {
+      provider: this.config.llm.provider,
+      model: this.config.llm.model,
+    });
+
+    this.adapters.push(new IPCAdapter(this.orchestrator));
 
     if (this.config.telegram?.botToken) {
-      this.adapters.push(new TelegramAdapter(this.agent, this.config.telegram.botToken));
+      this.adapters.push(
+        new TelegramAdapter(this.orchestrator, this.config.telegram.botToken)
+      );
     } else {
       logger.info("Telegram adapter not configured (no botToken in config)");
     }

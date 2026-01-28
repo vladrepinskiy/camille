@@ -1,6 +1,7 @@
-import type { Agent } from "@/core/agent";
+import type { Orchestrator } from "@/core/orchestrator";
 import { logger } from "@/logging";
-import type { AbstractAdapter } from "../abstract.adapter";
+
+import { AbstractAdapter } from "../abstract.adapter";
 
 // TODO [VR]: Implement iMessage integration
 // Possible approaches:
@@ -8,13 +9,11 @@ import type { AbstractAdapter } from "../abstract.adapter";
 // - Use sqlite3 to read ~/Library/Messages/chat.db (read-only)
 // - Use a bridge app like BlueBubbles or AirMessage
 
-export class IMessageAdapter implements AbstractAdapter {
+export class IMessageAdapter extends AbstractAdapter {
   readonly name = "imessage";
 
-  private agent: Agent;
-
-  constructor(agent: Agent) {
-    this.agent = agent;
+  constructor(orchestrator: Orchestrator) {
+    super(orchestrator);
   }
 
   async start(): Promise<void> {
