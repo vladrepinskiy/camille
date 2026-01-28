@@ -17,7 +17,7 @@ npm install
 
 # Run CLI in development
 npm run cli -- --help
-npm run cli -- start -f    # foreground mode
+npm run cli -- start       # foreground mode (default)
 
 # Type check
 npm run build:check
@@ -51,6 +51,7 @@ camille start [-d]       # Start daemon (foreground by default, -d for backgroun
 camille stop             # Stop daemon
 camille status           # Check if running
 camille chat             # Interactive REPL
+camille configure        # Interactive setup wizard
 camille pair             # Generate Telegram pairing code
 camille allow <path>     # Whitelist directory for read access
 camille disallow <path>  # Remove from whitelist
@@ -83,15 +84,14 @@ Camille runs in a strict sandbox:
 - **Read/Search**: Only `~/.camille/` + whitelisted paths
 - **Whitelist**: CLI-only (`camille allow`), cannot be modified via chat
 
-
 ## Project Structure
 
 ```
 src/
 ├── index.ts      # Daemon entry
-├── cli/          # CLI commands, IPC client
+├── cli/          # CLI entry, IPC client, Ink apps (configure)
 ├── core/         # Agent, runtime, config, permissions
-├── clients/      # Communication adapters (IPC, Telegram, iMessage)
+├── adapters/     # Communication adapters (IPC, Telegram, iMessage)
 ├── db/           # SQLite connection, schema, repositories
 ├── llm/          # LLM provider interfaces
 ├── tools/        # Agent tools (filesystem, etc.)
