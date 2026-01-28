@@ -47,7 +47,7 @@ To uninstall: `npm unlink -g camille`
 ## CLI Commands
 
 ```
-camille start [-f]       # Start daemon (-f for foreground)
+camille start [-d]       # Start daemon (foreground by default, -d for background)
 camille stop             # Stop daemon
 camille status           # Check if running
 camille chat             # Interactive REPL

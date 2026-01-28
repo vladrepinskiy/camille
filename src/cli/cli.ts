@@ -27,7 +27,7 @@ program
 program
   .command("start")
   .description("Start the Camille daemon")
-  .option("-f, --foreground", "Run in foreground (don't daemonize)")
+  .option("-d, --daemon", "Run as background daemon")
   .action(async (options) => {
     const pidPath = paths.pid();
 
@@ -42,7 +42,14 @@ program
       }
     }
 
-    if (options.foreground) {
+    if (options.daemon) {
+      const child = spawn(process.execPath, [new URL(import.meta.url).pathname, "start"], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+      console.log(`Camille started (PID: ${child.pid})`);
+    } else {
       const { Runtime } = await import("@/core/runtime");
       const runtime = new Runtime();
 
@@ -50,13 +57,6 @@ program
       process.on("SIGTERM", () => runtime.shutdown());
 
       await runtime.start();
-    } else {
-      const child = spawn(process.execPath, [new URL(import.meta.url).pathname, "start", "-f"], {
-        detached: true,
-        stdio: "ignore",
-      });
-      child.unref();
-      console.log(`Camille started (PID: ${child.pid})`);
     }
   });
 
