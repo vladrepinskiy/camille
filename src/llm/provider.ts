@@ -23,9 +23,18 @@ export function createModel(config: ModelConfig): LanguageModel {
     case "anthropic":
       // TODO [VR]: Add @ai-sdk/anthropic when needed
       throw new Error("Anthropic provider not yet implemented");
-    case "ollama":
-      // TODO [VR]: Add ollama-ai-provider when needed
-      throw new Error("Ollama provider not yet implemented");
+    case "ollama": {
+      // Ollama exposes an OpenAI-compatible API at /v1; use OpenAI provider for V2/V3 model type
+      const baseURL = config.baseUrl
+        ? `${config.baseUrl.replace(/\/$/, "")}/v1`
+        : "http://localhost:11434/v1";
+      const openai = createOpenAI({
+        apiKey: "ollama", // required by SDK but ignored by Ollama
+        baseURL,
+      });
+
+      return openai(config.model);
+    }
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
   }

@@ -33,10 +33,10 @@ export const ConfigSchema = z.object({
     .optional(),
 });
 
-// Hardcoded defaults - immune to agent corruption
+// TODO [VR]: get these from DEFAULT_AGENT_CONFIG to avoid duplication
 export const DEFAULT_CONFIG: Config = {
   llm: {
     provider: "ollama",
-    model: "llama3.2",
+    model: "qwen2.5:14b-instruct-q4_K_M",
   },
 };

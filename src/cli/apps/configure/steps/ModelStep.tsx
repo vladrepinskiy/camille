@@ -13,8 +13,9 @@ interface ModelStepProps {
   totalSteps: number;
 }
 
+// TODO [VR]: source from DEFAULT_AGENT_CONFIG
 const modelSuggestions: Record<LLMProvider, string> = {
-  ollama: "llama3.2",
+  ollama: "qwen2.5:14b-instruct-q4_K_M",
   openai: "gpt-4o",
 };
 
@@ -46,10 +47,10 @@ export const ModelStep: React.FC<ModelStepProps> = ({
     <Box flexDirection="column">
       <Header step={step} totalSteps={totalSteps} />
       <Text>Enter the model name:</Text>
-      <Text dimColor>Suggested for {provider}: {suggestion}</Text>
-      {currentValue && currentValue !== suggestion && (
-        <Text dimColor>Current: {currentValue}</Text>
-      )}
+      <Text dimColor>
+        Suggested for {provider}: {suggestion}
+      </Text>
+      {currentValue && currentValue !== suggestion && <Text dimColor>Current: {currentValue}</Text>}
       <Box marginTop={1}>
         <Text color="gray">{"> "}</Text>
         <TextInput value={value} onChange={setValue} onSubmit={handleSubmit} />
