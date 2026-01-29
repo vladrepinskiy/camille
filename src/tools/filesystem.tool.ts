@@ -1,6 +1,7 @@
 // TODO [VR]: Brush up filesystem tool
 
 import { permissions } from "@/core/permissions";
+import { paths } from "@/utils/paths.util";
 import { readdirSync, readFileSync, statSync } from "fs";
 import { join, resolve } from "path";
 import { z } from "zod";
@@ -144,7 +145,7 @@ export const readFileTool: Tool = {
     const parsed = ReadFileInputSchema.parse(input);
     const { path: filePath, maxLines } = parsed;
 
-    const absolutePath = resolve(filePath);
+    const absolutePath = resolve(paths.expandTilde(filePath));
     permissions.assertRead(absolutePath);
 
     const content = readFileSync(absolutePath, "utf-8");

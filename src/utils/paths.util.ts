@@ -57,6 +57,13 @@ export const paths = {
 
     return logsDir;
   },
+
+  expandTilde(path: string): string {
+    if (path === "~") return homedir();
+    if (path.startsWith("~/")) return homedir() + path.slice(1);
+
+    return path;
+  },
 };
 
 export function findPackageJson(callerDir: string): PackageJson {
