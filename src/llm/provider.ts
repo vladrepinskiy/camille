@@ -1,91 +1,54 @@
-// TODO [VR]: Implement LLM providers - openai, anthropic, ollama for v1
+import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModel } from "ai";
 
-/**
- * Message format for LLM conversations.
- */
-export interface LLMMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string;
-  name?: string; // For tool messages
+export type LLMProviderType = "openai" | "anthropic" | "ollama";
+
+export interface ModelConfig {
+  provider: LLMProviderType;
+  model: string;
+  apiKey?: string;
+  baseUrl?: string;
 }
 
-/**
- * Tool definition for LLM function calling.
- */
-export interface LLMTool {
-  name: string;
-  description: string;
-  parameters: Record<string, unknown>; // JSON Schema
+export function createModel(config: ModelConfig): LanguageModel {
+  switch (config.provider) {
+    case "openai": {
+      const openai = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl,
+      });
+
+      return openai(config.model);
+    }
+    case "anthropic":
+      // TODO [VR]: Add @ai-sdk/anthropic when needed
+      throw new Error("Anthropic provider not yet implemented");
+    case "ollama": {
+      // Ollama exposes an OpenAI-compatible API at /v1; use OpenAI provider for V2/V3 model type
+      const baseURL = config.baseUrl
+        ? `${config.baseUrl.replace(/\/$/, "")}/v1`
+        : "http://localhost:11434/v1";
+      const openai = createOpenAI({
+        apiKey: "ollama", // required by SDK but ignored by Ollama
+        baseURL,
+      });
+
+      return openai(config.model);
+    }
+    default:
+      throw new Error(`Unknown provider: ${config.provider}`);
+  }
 }
 
-/**
- * Response from LLM.
- */
-export interface LLMResponse {
-  content: string;
-  toolCalls?: Array<{
-    name: string;
-    arguments: Record<string, unknown>;
-  }>;
-  finishReason: "stop" | "tool_calls" | "length" | "error";
-}
-
-/**
- * Options for LLM completion.
- */
-export interface LLMCompletionOptions {
-  messages: LLMMessage[];
-  tools?: LLMTool[];
-  temperature?: number;
-  maxTokens?: number;
-  stream?: boolean;
-}
-
-/**
- * LLM Provider interface.
- */
-export interface LLMProvider {
-  /**
-   * Provider name (e.g., "openai", "ollama").
-   */
-  name: string;
-
-  /**
-   * Generate a completion.
-   */
-  complete(options: LLMCompletionOptions): Promise<LLMResponse>;
-
-  /**
-   * Generate a streaming completion.
-   */
-  completeStream(
-    options: LLMCompletionOptions,
-    onChunk: (chunk: string) => void
-  ): Promise<LLMResponse>;
-}
-
-/**
- * Stub provider for MVP (no actual LLM calls).
- */
-export class StubProvider implements LLMProvider {
-  name = "stub";
-
-  async complete(_options: LLMCompletionOptions): Promise<LLMResponse> {
-    return {
-      content: "[MVP Mode] LLM provider not configured. Please set up an LLM in config.toml.",
-      finishReason: "stop",
-    };
+export function isLLMConfigured(config: ModelConfig): boolean {
+  if (config.provider === "openai" || config.provider === "anthropic") {
+    return !!config.apiKey;
   }
 
-  async completeStream(
-    _options: LLMCompletionOptions,
-    onChunk: (chunk: string) => void
-  ): Promise<LLMResponse> {
-    const response = "[MVP Mode] LLM provider not configured.";
-    onChunk(response);
-    return {
-      content: response,
-      finishReason: "stop",
-    };
+  // Ollama doesn't require an API key
+  if (config.provider === "ollama") {
+    return true;
   }
+
+  return false;
 }

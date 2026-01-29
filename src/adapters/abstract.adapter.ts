@@ -1,11 +1,14 @@
-import type { Agent } from "@/core/agent";
+import type { Orchestrator } from "@/core/orchestrator";
 
-export interface AbstractAdapter {
-  readonly name: string;
-  start(): Promise<void>;
-  stop(): Promise<void>;
-}
+export abstract class AbstractAdapter {
+  abstract readonly name: string;
 
-export interface AbstractAdapterConstructor {
-  new(agent: Agent, ...args: unknown[]): AbstractAdapter;
+  protected orchestrator: Orchestrator;
+
+  constructor(orchestrator: Orchestrator) {
+    this.orchestrator = orchestrator;
+  }
+
+  abstract start(): Promise<void>;
+  abstract stop(): Promise<void>;
 }

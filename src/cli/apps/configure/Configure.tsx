@@ -12,6 +12,13 @@ import { ProviderStep } from "./steps/ProviderStep";
 import { SummaryStep } from "./steps/SummaryStep";
 import { TelegramStep } from "./steps/TelegramStep";
 
+// TODO [VR]: Add agent configuration steps:
+// - Model selection per agent (planner, synthesizer)
+// - Temperature settings per agent
+// - Custom system prompts (advanced mode)
+// - maxToolCalls setting
+// See src/agents/agent.types.ts for DEFAULT_AGENT_CONFIG
+
 type Step = "menu" | "provider" | "model" | "apiKey" | "baseUrl" | "telegram" | "summary";
 
 const TOTAL_STEPS = 5;

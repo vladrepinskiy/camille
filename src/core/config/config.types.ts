@@ -11,7 +11,24 @@ export interface LLMConfig {
   baseUrl?: string;
 }
 
+export interface AgentModelOverride {
+  model?: string;
+  temperature?: number;
+}
+
+export interface AgentConfigOverride {
+  model?: AgentModelOverride;
+  systemPrompt?: string;
+}
+
+export interface AgentsConfig {
+  planner?: AgentConfigOverride;
+  synthesizer?: AgentConfigOverride;
+}
+
 export interface Config {
   telegram?: TelegramConfig;
   llm: LLMConfig;
+  maxToolCalls?: number; // Maximum number of tool calls per request (default: 5)
+  agents?: AgentsConfig; // Optional overrides for specific agents
 }

@@ -1,20 +1,20 @@
-import type { Agent } from "@/core/agent";
+import type { Orchestrator } from "@/core/orchestrator";
 import { pairingCodesRepo, telegramUsersRepo } from "@/db";
 import { logger } from "@/logging";
 import { generateSessionId, hashCode } from "@/utils/crypto.util";
 import { Bot, type Context } from "grammy";
-import type { AbstractAdapter } from "../abstract.adapter";
 
-export class TelegramAdapter implements AbstractAdapter {
+import { AbstractAdapter } from "../abstract.adapter";
+
+export class TelegramAdapter extends AbstractAdapter {
   readonly name = "telegram";
 
   private bot: Bot;
-  private agent: Agent;
   private sessions: Map<number, string> = new Map();
 
-  constructor(agent: Agent, token: string) {
+  constructor(orchestrator: Orchestrator, token: string) {
+    super(orchestrator);
     this.bot = new Bot(token);
-    this.agent = agent;
     this.setupHandlers();
   }
 
@@ -137,9 +137,53 @@ export class TelegramAdapter implements AbstractAdapter {
       });
 
       try {
+        // Send initial typing indicator
         await ctx.replyWithChatAction("typing");
 
-        const response = await this.agent.processInput(text, sessionId);
+        // Track status for potential status message updates
+        let statusMessageId: number | undefined;
+        let lastStatus = "";
+
+        const response = await this.orchestrator.processMessage(text, sessionId, {
+          onStatus: async (status) => {
+            let statusText = "";
+            if (status.type === "planning") {
+              statusText = "Thinking...";
+            } else if (status.type === "executing_tool") {
+              statusText = `Running ${status.tool}...`;
+            } else if (status.type === "synthesizing") {
+              statusText = "Writing response...";
+            }
+
+            // Only update if status changed
+            if (statusText && statusText !== lastStatus) {
+              lastStatus = statusText;
+              try {
+                if (statusMessageId) {
+                  await ctx.api.editMessageText(
+                    ctx.chat!.id,
+                    statusMessageId,
+                    statusText
+                  );
+                } else {
+                  const msg = await ctx.reply(statusText);
+                  statusMessageId = msg.message_id;
+                }
+              } catch {
+                // Ignore edit errors (message might be deleted)
+              }
+            }
+          },
+        });
+
+        // Delete status message if it exists
+        if (statusMessageId) {
+          try {
+            await ctx.api.deleteMessage(ctx.chat!.id, statusMessageId);
+          } catch {
+            // Ignore delete errors
+          }
+        }
 
         const maxLength = 4096;
         const responseText = response.text;

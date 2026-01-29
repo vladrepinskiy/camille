@@ -1,21 +1,21 @@
-import type { Agent } from "@/core/agent";
+import type { Orchestrator } from "@/core/orchestrator";
 import { logger } from "@/logging";
 import { generateSessionId } from "@/utils/crypto.util";
 import { paths } from "@/utils/paths.util";
 import { existsSync, unlinkSync } from "fs";
 import { createServer, type Server, type Socket } from "net";
-import type { AbstractAdapter } from "../abstract.adapter";
+
+import { AbstractAdapter } from "../abstract.adapter";
 import type { RequestMessage, ResponseMessage } from "./ipc.types";
 
-export class IPCAdapter implements AbstractAdapter {
+export class IPCAdapter extends AbstractAdapter {
   readonly name = "ipc";
 
   private server: Server | null = null;
-  private agent: Agent;
   private connections: Set<Socket> = new Set();
 
-  constructor(agent: Agent) {
-    this.agent = agent;
+  constructor(orchestrator: Orchestrator) {
+    super(orchestrator);
   }
 
   async start(): Promise<void> {
@@ -110,7 +110,7 @@ export class IPCAdapter implements AbstractAdapter {
   ): Promise<void> {
     switch (message.type) {
       case "create_session": {
-        const newSessionId = this.agent.createSession();
+        const newSessionId = this.orchestrator.createSession();
         this.sendMessage(socket, {
           type: "session_created",
           sessionId: newSessionId,
@@ -139,11 +139,20 @@ export class IPCAdapter implements AbstractAdapter {
         const effectiveSessionId = message.sessionId || sessionId;
 
         try {
-          const response = await this.agent.processInput(
+          const response = await this.orchestrator.processMessage(
             message.text,
             effectiveSessionId,
-            (chunk) => {
-              this.sendMessage(socket, { type: "chunk", text: chunk });
+            {
+              onStatus: (status) => {
+                this.sendMessage(socket, {
+                  type: "processing_status",
+                  processingStatus: status.type,
+                  tool: status.type === "executing_tool" ? status.tool : undefined,
+                });
+              },
+              onChunk: (chunk) => {
+                this.sendMessage(socket, { type: "chunk", text: chunk });
+              },
             }
           );
 
@@ -151,7 +160,7 @@ export class IPCAdapter implements AbstractAdapter {
             for (const call of response.toolCalls) {
               this.sendMessage(socket, {
                 type: "tool_call",
-                name: call.name,
+                name: call.tool,
                 input: call.input,
               });
             }

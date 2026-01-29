@@ -16,7 +16,6 @@ interface SearchResult {
 
 const SearchInputSchema = z.object({
   query: z.string().min(1).describe("Search query (filename pattern or text)"),
-  path: z.string().optional().describe("Directory to search in (must be whitelisted)"),
   maxResults: z.number().int().positive().default(20).describe("Maximum results to return"),
 });
 
@@ -30,6 +29,20 @@ function queryToRegex(query: string): RegExp {
   const pattern = escaped.replace(/\*/g, ".*").replace(/\?/g, ".");
 
   return new RegExp(pattern, "i");
+}
+
+// Agent home + whitelisted paths, deduplicated
+function getSearchRoots(): string[] {
+  const agentHome = resolve(permissions.getAgentHome());
+  const whitelisted = permissions.listWhitelistedPaths().map((p) => resolve(p.path));
+  const all = [agentHome, ...whitelisted];
+  const resolved = [...new Set(all)];
+
+  return resolved.filter((R) => {
+    const containedInOther = resolved.some((S) => R !== S && (R === S || R.startsWith(S + "/")));
+
+    return !containedInOther;
+  });
 }
 
 function searchDirectory(
@@ -90,28 +103,27 @@ function searchDirectory(
 
 export const searchTool: Tool = {
   name: "search",
-  description: "Search for files and directories by name pattern",
+  description:
+    "Search for files and directories by name pattern in ~/.camille/ and whitelisted paths only",
   parameters: SearchInputSchema,
 
   async execute(input: unknown, _context: ToolContext): Promise<unknown> {
     const parsed = SearchInputSchema.parse(input);
-    const { query, path: searchPath, maxResults } = parsed;
+    const { query, maxResults } = parsed;
 
-    let startDir: string;
-    if (searchPath) {
-      startDir = resolve(searchPath);
-      permissions.assertRead(startDir);
-    } else {
-      startDir = permissions.getAgentHome();
-    }
-
+    const roots = getSearchRoots();
     const pattern = queryToRegex(query);
     const results: SearchResult[] = [];
-    searchDirectory(startDir, pattern, results, maxResults);
+    const visited = new Set<string>();
+
+    for (const root of roots) {
+      if (results.length >= maxResults) break;
+      searchDirectory(root, pattern, results, maxResults, visited);
+    }
 
     if (results.length === 0) {
       return {
-        message: `No files matching "${query}" found in ${startDir}`,
+        message: `No files matching "${query}" found in ~/.camille/ or whitelisted paths`,
         results: [],
       };
     }

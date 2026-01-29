@@ -12,7 +12,8 @@ export type ResponseMessageType =
   | "done"
   | "error"
   | "status"
-  | "session_created";
+  | "session_created"
+  | "processing_status";
 
 export interface ResponseMessage {
   type: ResponseMessageType;
@@ -22,4 +23,6 @@ export interface ResponseMessage {
   sessionId?: string;
   status?: string;
   error?: string;
+  processingStatus?: string; // Processing status for UI display (e.g., "planning", "executing_tool")
+  tool?: string; // Tool name when processingStatus is "executing_tool"
 }
