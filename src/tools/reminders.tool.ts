@@ -11,12 +11,28 @@ const FIELD_SEPARATOR = String.fromCharCode(31);
 const ListRemindersInputSchema = z
   .object({
     listName: z.string().min(1).optional().describe("Optional Reminders list name to filter by"),
-    includeCompleted: z
-      .boolean()
-      .default(false)
-      .describe("Include completed reminders in the results"),
+    status: z
+      .enum(["active", "completed", "all"])
+      .default("active")
+      .describe("Filter by status: active, completed, or all"),
+    maxResults: z
+      .number()
+      .int()
+      .positive()
+      .max(2_000)
+      .optional()
+      .describe("Limit total reminders returned across lists"),
+    query: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Filter reminder names (case-insensitive substring match)"),
   })
   .strict();
+
+const SearchRemindersInputSchema = ListRemindersInputSchema.extend({
+  query: z.string().min(1).describe("Filter reminder names (case-insensitive substring match)"),
+});
 
 function buildListRemindersScript(): string[] {
   return [
@@ -27,10 +43,24 @@ function buildListRemindersScript(): string[] {
     "if (count of argv) >= 1 then",
     "set targetListName to item 1 of argv",
     "end if",
-    "set includeCompleted to false",
+    "set statusFilter to \"active\"",
     "if (count of argv) >= 2 then",
-    "set includeCompleted to (item 2 of argv) is \"true\"",
+    "set statusFilter to item 2 of argv",
     "end if",
+    "if statusFilter is not \"active\" and statusFilter is not \"completed\" and statusFilter is not \"all\" then",
+    "set statusFilter to \"active\"",
+    "end if",
+    "set maxResults to 0",
+    "if (count of argv) >= 3 then",
+    "try",
+    "set maxResults to (item 3 of argv) as integer",
+    "on error",
+    "set maxResults to 0",
+    "end try",
+    "end if",
+    "set hasLimit to maxResults > 0",
+    "set totalCount to 0",
+    "set shouldStop to false",
     "tell application \"Reminders\"",
     "set targetLists to lists",
     "if targetListName is not \"\" then",
@@ -38,11 +68,23 @@ function buildListRemindersScript(): string[] {
     "end if",
     "set output to \"\"",
     "repeat with L in targetLists",
+    "if shouldStop then exit repeat",
     "set listName to name of L",
     "set output to output & \"LIST\" & fieldSep & listName & recordSep",
-    "repeat with R in reminders of L",
-    "if includeCompleted or (completed of R is false) then",
-    "set output to output & \"REM\" & fieldSep & listName & fieldSep & (name of R) & recordSep",
+    "if statusFilter is \"completed\" then",
+    "set listReminders to reminders of L whose completed is true",
+    "else if statusFilter is \"active\" then",
+    "set listReminders to reminders of L whose completed is false",
+    "else",
+    "set listReminders to reminders of L",
+    "end if",
+    "repeat with R in listReminders",
+    "set isCompleted to (completed of R)",
+    "set output to output & \"REM\" & fieldSep & listName & fieldSep & (name of R) & fieldSep & (isCompleted as string) & recordSep",
+    "set totalCount to totalCount + 1",
+    "if hasLimit and totalCount >= maxResults then",
+    "set shouldStop to true",
+    "exit repeat",
     "end if",
     "end repeat",
     "end repeat",
@@ -52,14 +94,24 @@ function buildListRemindersScript(): string[] {
   ];
 }
 
-function parseRemindersOutput(output: string): Array<{ name: string; reminders: string[] }> {
+type ReminderItem = {
+  name: string;
+  completed: boolean;
+};
+
+type ReminderList = {
+  name: string;
+  reminders: ReminderItem[];
+};
+
+function parseRemindersOutput(output: string): ReminderList[] {
   if (!output.trim()) {
     return [];
   }
 
   const records = output.split(RECORD_SEPARATOR).filter(Boolean);
   const listOrder: string[] = [];
-  const lists = new Map<string, { name: string; reminders: string[] }>();
+  const lists = new Map<string, ReminderList>();
 
   for (const record of records) {
     const parts = record.split(FIELD_SEPARATOR);
@@ -77,13 +129,15 @@ function parseRemindersOutput(output: string): Array<{ name: string; reminders: 
     if (kind === "REM") {
       const listName = parts[1] ?? "";
       const reminderName = parts[2] ?? "";
+      const completedRaw = (parts[3] ?? "").toLowerCase();
+      const completed = completedRaw === "true";
       if (!lists.has(listName)) {
         lists.set(listName, { name: listName, reminders: [] });
         listOrder.push(listName);
       }
 
       if (reminderName) {
-        lists.get(listName)?.reminders.push(reminderName);
+        lists.get(listName)?.reminders.push({ name: reminderName, completed });
       }
     }
   }
@@ -91,39 +145,82 @@ function parseRemindersOutput(output: string): Array<{ name: string; reminders: 
   return listOrder.map((name) => lists.get(name)!).filter(Boolean);
 }
 
+function filterLists(lists: ReminderList[], query?: string): ReminderList[] {
+  const needle = query?.toLowerCase().trim();
+  const filtered = lists.map((list) => {
+    let reminders = list.reminders;
+
+    if (needle) {
+      reminders = reminders.filter((r) => r.name.toLowerCase().includes(needle));
+    }
+
+    return { ...list, reminders };
+  });
+
+  return filtered;
+}
+
+async function executeListReminders(
+  parsed: z.infer<typeof ListRemindersInputSchema>
+): Promise<unknown> {
+  const status = parsed.status;
+  const scriptLines = buildListRemindersScript();
+  const args = scriptLines.flatMap((line) => ["-e", line]);
+  const listArg = parsed.listName ?? "";
+  const statusArg = status;
+  const maxResultsArg = parsed.maxResults ? String(parsed.maxResults) : "";
+  const commandArgs = [...args, "--", listArg, statusArg, maxResultsArg];
+
+  const result = await runCommand(OSASCRIPT_PATH, commandArgs, {
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+    maxOutputBytes: DEFAULT_MAX_OUTPUT_BYTES,
+  });
+
+  if (result.timedOut) {
+    throw new Error(`osascript timed out after ${DEFAULT_TIMEOUT_MS}ms`);
+  }
+
+  if (result.exitCode !== 0) {
+    const errorMessage =
+      result.stderr.trim() || result.stdout.trim() || "osascript failed to read Reminders";
+    throw new Error(errorMessage);
+  }
+
+  const lists = filterLists(parseRemindersOutput(result.stdout), parsed.query);
+  const totalCount = lists.reduce((sum, list) => sum + list.reminders.length, 0);
+  const limitReached = parsed.maxResults ? totalCount >= parsed.maxResults : false;
+
+  return {
+    lists,
+    status,
+    query: parsed.query ?? null,
+    filteredList: parsed.listName ?? null,
+    maxResults: parsed.maxResults ?? null,
+    limitReached,
+    truncated: result.truncated,
+  };
+}
+
 export const remindersListTool: Tool = {
   name: "reminders.list",
-  description: "List reminders from Apple Reminders via AppleScript (read-only)",
+  description: "List reminders from Apple Reminders with optional status and name filters (read-only)",
   parameters: ListRemindersInputSchema,
 
   async execute(input: unknown, _context: ToolContext): Promise<unknown> {
     const parsed = ListRemindersInputSchema.parse(input);
-    const scriptLines = buildListRemindersScript();
-    const args = scriptLines.flatMap((line) => ["-e", line]);
-    const listArg = parsed.listName ?? "";
-    const includeArg = parsed.includeCompleted ? "true" : "false";
-    const commandArgs = [...args, "--", listArg, includeArg];
 
-    const result = await runCommand(OSASCRIPT_PATH, commandArgs, {
-      timeoutMs: DEFAULT_TIMEOUT_MS,
-      maxOutputBytes: DEFAULT_MAX_OUTPUT_BYTES,
-    });
+    return executeListReminders(parsed);
+  },
+};
 
-    if (result.timedOut) {
-      throw new Error(`osascript timed out after ${DEFAULT_TIMEOUT_MS}ms`);
-    }
+export const remindersSearchTool: Tool = {
+  name: "reminders.search",
+  description: "Search reminders by name with optional status and list filters (read-only)",
+  parameters: SearchRemindersInputSchema,
 
-    if (result.exitCode !== 0) {
-      const errorMessage =
-        result.stderr.trim() || result.stdout.trim() || "osascript failed to read Reminders";
-      throw new Error(errorMessage);
-    }
+  async execute(input: unknown, _context: ToolContext): Promise<unknown> {
+    const parsed = SearchRemindersInputSchema.parse(input);
 
-    return {
-      lists: parseRemindersOutput(result.stdout),
-      includeCompleted: parsed.includeCompleted,
-      filteredList: parsed.listName ?? null,
-      truncated: result.truncated,
-    };
+    return executeListReminders(parsed);
   },
 };
