@@ -58,7 +58,6 @@ export class PlannerAgent extends AbstractAgent {
           content: `Available tools:\n${toolDescriptions}\n\nUser request: ${input.message}`,
         },
       ],
-      temperature: this.temperature,
     });
 
     return {

@@ -1,5 +1,5 @@
 import type { Orchestrator } from "@/core/orchestrator";
-import { pairingCodesRepo, telegramUsersRepo } from "@/db";
+import { pairingCodesRepo, sessionsRepo, telegramUsersRepo } from "@/db";
 import { logger } from "@/logging";
 import { generateSessionId, hashCode } from "@/utils/crypto.util";
 import { Bot, type Context } from "grammy";
@@ -130,6 +130,7 @@ export class TelegramAdapter extends AbstractAdapter {
         sessionId = generateSessionId();
         this.sessions.set(telegramId, sessionId);
       }
+      sessionsRepo.ensure(sessionId, "telegram", String(telegramId));
 
       logger.debug("Telegram message received", {
         telegramId,

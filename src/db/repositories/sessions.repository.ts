@@ -1,5 +1,5 @@
 import { getDb } from "@/db/connection";
-import type { NewSession, Session } from "@/db/db.types";
+import type { ClientType, NewSession, Session } from "@/db/db.types";
 
 export const sessionsRepo = {
   insert(session: NewSession): void {
@@ -23,5 +23,23 @@ export const sessionsRepo = {
 
   updateLastActiveAt(id: string): void {
     getDb().prepare("UPDATE sessions SET last_active_at = ? WHERE id = ?").run(Date.now(), id);
+  },
+
+  ensure(id: string, client_type: ClientType, client_id: string | null): void {
+    const existing = sessionsRepo.findById(id);
+    if (!existing) {
+      const now = Date.now();
+      sessionsRepo.insert({
+        id,
+        client_type,
+        client_id,
+        created_at: now,
+        last_active_at: now,
+      });
+
+      return;
+    }
+
+    sessionsRepo.updateLastActiveAt(id);
   },
 };

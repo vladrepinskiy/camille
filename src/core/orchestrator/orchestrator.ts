@@ -6,9 +6,12 @@ import {
   type ToolExecutionResult,
 } from "@/agents";
 import type { Config } from "@/core/config";
+import { historyService } from "@/core/conversation/history.service";
+import { toolCallsRepo } from "@/db";
 import { logger } from "@/logging";
 import { toolRegistry, type ToolContext } from "@/tools";
 import { generateSessionId } from "@/utils/crypto.util";
+import { safeJsonStringify } from "@/utils/json.util";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type {
   OrchestratorCallbacks,
@@ -59,17 +62,50 @@ async function executePlan(
         error: `Tool "${step.tool}" not found`,
       });
 
+      toolCallsRepo.insert({
+        session_id: context.sessionId,
+        tool_name: step.tool,
+        input: safeJsonStringify(step.input) ?? "{}",
+        output: null,
+        error: `Tool "${step.tool}" not found`,
+        duration_ms: null,
+        created_at: Date.now(),
+      });
+
       continue;
     }
 
+    const startedAt = Date.now();
     try {
       const result = await tool.execute(step.input, context);
+      const durationMs = Date.now() - startedAt;
       results.push({ tool: step.tool, result });
       logger.tool(step.tool, { input: step.input, output: result });
+
+      toolCallsRepo.insert({
+        session_id: context.sessionId,
+        tool_name: step.tool,
+        input: safeJsonStringify(step.input) ?? "{}",
+        output: safeJsonStringify(result),
+        error: null,
+        duration_ms: durationMs,
+        created_at: Date.now(),
+      });
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
+      const durationMs = Date.now() - startedAt;
       logger.error(`Tool ${step.tool} failed`, { error });
       results.push({ tool: step.tool, result: null, error });
+
+      toolCallsRepo.insert({
+        session_id: context.sessionId,
+        tool_name: step.tool,
+        input: safeJsonStringify(step.input) ?? "{}",
+        output: null,
+        error,
+        duration_ms: durationMs,
+        created_at: Date.now(),
+      });
     }
   }
 
@@ -104,6 +140,9 @@ export class Orchestrator {
       sessionId,
       agentHome: this.config.llm.provider,
     };
+    const history = historyService.getRecent(sessionId);
+    const userMessageAt = Date.now();
+    historyService.append(sessionId, "user", input, userMessageAt);
 
     // 1. Run planner (LLM call)
     onStatus?.({ type: "planning" });
@@ -113,6 +152,7 @@ export class Orchestrator {
     const plan = await this.planner.run({
       message: input,
       tools,
+      history,
     });
 
     logger.debug("Plan created", {
@@ -125,7 +165,7 @@ export class Orchestrator {
     if (!plan.requiresTools || plan.steps.length === 0) {
       onStatus?.({ type: "synthesizing" });
       const text = await this.synthesizer.run(
-        { message: input, toolResults: [] },
+        { message: input, toolResults: [], history },
         (chunk) => {
           onStatus?.({ type: "streaming", chunk });
           onChunk?.(chunk);
@@ -133,6 +173,8 @@ export class Orchestrator {
       );
 
       onStatus?.({ type: "done" });
+      const assistantMessageAt = Math.max(Date.now(), userMessageAt + 1);
+      historyService.append(sessionId, "assistant", text, assistantMessageAt);
 
       return { text };
     }
@@ -143,7 +185,7 @@ export class Orchestrator {
     // 4. Synthesize final response (LLM call)
     onStatus?.({ type: "synthesizing" });
     const text = await this.synthesizer.run(
-      { message: input, toolResults },
+      { message: input, toolResults, history },
       (chunk) => {
         onStatus?.({ type: "streaming", chunk });
         onChunk?.(chunk);
@@ -151,6 +193,8 @@ export class Orchestrator {
     );
 
     onStatus?.({ type: "done" });
+    const assistantMessageAt = Math.max(Date.now(), userMessageAt + 1);
+    historyService.append(sessionId, "assistant", text, assistantMessageAt);
 
     return {
       text,

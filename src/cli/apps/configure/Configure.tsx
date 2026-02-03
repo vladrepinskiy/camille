@@ -14,7 +14,6 @@ import { TelegramStep } from "./steps/TelegramStep";
 
 // TODO [VR]: Add agent configuration steps:
 // - Model selection per agent (planner, synthesizer)
-// - Temperature settings per agent
 // - Custom system prompts (advanced mode)
 // - maxToolCalls setting
 // See src/agents/agent.types.ts for DEFAULT_AGENT_CONFIG

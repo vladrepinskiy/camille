@@ -1,4 +1,5 @@
 import type { Orchestrator } from "@/core/orchestrator";
+import { sessionsRepo } from "@/db";
 import { logger } from "@/logging";
 import { generateSessionId } from "@/utils/crypto.util";
 import { paths } from "@/utils/paths.util";
@@ -111,6 +112,7 @@ export class IPCAdapter extends AbstractAdapter {
     switch (message.type) {
       case "create_session": {
         const newSessionId = this.orchestrator.createSession();
+        sessionsRepo.ensure(newSessionId, "cli", null);
         this.sendMessage(socket, {
           type: "session_created",
           sessionId: newSessionId,
@@ -137,6 +139,7 @@ export class IPCAdapter extends AbstractAdapter {
         }
 
         const effectiveSessionId = message.sessionId || sessionId;
+        sessionsRepo.ensure(effectiveSessionId, "cli", null);
 
         try {
           const response = await this.orchestrator.processMessage(
