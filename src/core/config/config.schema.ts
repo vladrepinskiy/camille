@@ -4,7 +4,6 @@ import type { Config } from "./config.types";
 
 const AgentModelOverrideSchema = z.object({
   model: z.string().min(1).optional(),
-  temperature: z.number().min(0).max(2).optional(),
 });
 
 const AgentConfigOverrideSchema = z.object({

@@ -20,12 +20,10 @@ Do not mention the internal workings of tools or the planning process to the use
 export const DEFAULT_AGENT_CONFIG = {
   planner: {
     model: "gpt-5o-nano",
-    temperature: 0.2,
     systemPrompt: DEFAULT_PLANNER_SYSTEM_PROMPT,
   },
   synthesizer: {
     model: "gpt-5o-nano",
-    temperature: 0.5,
     systemPrompt: DEFAULT_SYNTHESIZER_SYSTEM_PROMPT,
   },
   maxToolCalls: 5,

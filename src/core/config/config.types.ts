@@ -13,7 +13,6 @@ export interface LLMConfig {
 
 export interface AgentModelOverride {
   model?: string;
-  temperature?: number;
 }
 
 export interface AgentConfigOverride {

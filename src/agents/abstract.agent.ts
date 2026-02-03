@@ -9,14 +9,12 @@ export abstract class AbstractAgent {
 
   protected model: LanguageModel;
   protected systemPrompt: string;
-  protected temperature: number;
 
   constructor(agentType: AgentType, config: Config) {
     const defaults = DEFAULT_AGENT_CONFIG[agentType];
     const overrides = config.agents?.[agentType];
 
     this.systemPrompt = overrides?.systemPrompt ?? defaults.systemPrompt;
-    this.temperature = overrides?.model?.temperature ?? defaults.temperature;
 
     this.model = createModel({
       provider: config.llm.provider,

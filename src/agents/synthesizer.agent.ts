@@ -43,7 +43,6 @@ export class SynthesizerAgent extends AbstractAgent {
           content: `${toolResultsText}User request: ${input.message}`,
         },
       ],
-      temperature: this.temperature,
     });
 
     let fullText = "";
