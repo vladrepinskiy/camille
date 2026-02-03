@@ -19,6 +19,14 @@ export const messagesRepo = {
       .all(sessionId) as Message[];
   },
 
+  findRecentBySessionId(sessionId: string, limit: number): Message[] {
+    return getDb()
+      .prepare(
+        "SELECT * FROM messages WHERE session_id = ? ORDER BY created_at DESC LIMIT ?"
+      )
+      .all(sessionId, limit) as Message[];
+  },
+
   deleteBySessionId(sessionId: string): number {
     const result = getDb().prepare("DELETE FROM messages WHERE session_id = ?").run(sessionId);
 
